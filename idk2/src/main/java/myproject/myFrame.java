@@ -2,12 +2,16 @@ package myproject;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+
 import java.awt.*;
+
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -74,9 +78,17 @@ public class myFrame extends JFrame implements ActionListener {
         loadItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                DataManager.load(getContentPane());
-                revalidate(); 
-                repaint();  
+                JFileChooser fileChooser = new JFileChooser();
+
+                if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
+                    DataManager.load(getContentPane(), file);
+                    revalidate(); 
+                    repaint();  
+                    System.err.println(file);
+                }
+
+
                 
             }
         });
