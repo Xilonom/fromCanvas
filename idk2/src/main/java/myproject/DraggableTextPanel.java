@@ -1,16 +1,28 @@
 package myproject;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Rectangle2D;
+
+import javax.swing.BorderFactory;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 public class DraggableTextPanel extends JPanel {
     private Point startDragPos;
     private boolean dragging = false;
     private JTextArea textArea;
+    String Type = "TxtPanel";
     int posX;
     int posY;
     String text;
@@ -20,7 +32,7 @@ public class DraggableTextPanel extends JPanel {
         textArea = new JTextArea("");
         this.setOpaque(true);
         this.setBackground(Color.ORANGE);
-        this.setPreferredSize(new Dimension(200, 100)); 
+        this.setPreferredSize(new Dimension(150, 150)); 
         this.setBorder(BorderFactory.createLineBorder(Color.black));
         this.setBounds(50, 50, 200, 100);
         this.setSize(150,150);
@@ -36,13 +48,12 @@ public class DraggableTextPanel extends JPanel {
         this.add(textArea);
         textArea.setText(text);
 
+        float fontSize = Math.min(getWidth() / 10f, getHeight() / 10f); 
+        Font currentFont = textArea.getFont();
+        Font newFont = currentFont.deriveFont(fontSize); 
+        textArea.setFont(newFont);
+
         this.setLocation(new Point(posX, posY));
-
-            
-
-        
- 
-
         textArea.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -123,9 +134,18 @@ public class DraggableTextPanel extends JPanel {
         });
     }
 
+    @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
+        Graphics2D g2 = (Graphics2D) g;
+        int width = getWidth();
+        int height = getHeight();
+        Color color1 = new Color(255, 172, 54);
+        Color color2 = new Color(255, 212, 54); 
+        
+        GradientPaint gradient = new GradientPaint(0, 0, color1, 0, height, color2);
+        g2.setPaint(gradient);
+        g2.fill(new Rectangle2D.Double(0, 0, width, height));
     }
 
     public int getPosX() {
@@ -140,6 +160,10 @@ public class DraggableTextPanel extends JPanel {
 
     public String getText() {
         return textArea.getText();
+    }
+
+    public String getType() {
+        return Type;
     }
     
 }
