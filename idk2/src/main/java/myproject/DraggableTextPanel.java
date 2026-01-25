@@ -26,8 +26,10 @@ public class DraggableTextPanel extends JPanel {
     int posX;
     int posY;
     String text;
+    Color color1;
+    Color color2;
 
-    public DraggableTextPanel(int posX, int posY, String text) {
+    public DraggableTextPanel(int posX, int posY, String text, Color clr1, Color clr2) {
 
         textArea = new JTextArea("");
         this.setOpaque(true);
@@ -36,6 +38,9 @@ public class DraggableTextPanel extends JPanel {
         this.setBorder(BorderFactory.createLineBorder(Color.black));
         this.setBounds(50, 50, 200, 100);
         this.setSize(150,150);
+
+        color1 = clr1;
+        color2 = clr2;
         
         
         textArea.setOpaque(false); 
@@ -140,8 +145,6 @@ public class DraggableTextPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g;
         int width = getWidth();
         int height = getHeight();
-        Color color1 = new Color(255, 172, 54);
-        Color color2 = new Color(255, 212, 54); 
         
         GradientPaint gradient = new GradientPaint(0, 0, color1, 0, height, color2);
         g2.setPaint(gradient);
@@ -164,6 +167,13 @@ public class DraggableTextPanel extends JPanel {
 
     public String getType() {
         return Type;
+    }
+
+    public Color getColor1() {
+        return color1;
+    }
+    public Color getColor2() {
+        return color2;
     }
     
 }

@@ -5,9 +5,12 @@ import java.awt.Container;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -26,11 +29,16 @@ import javax.swing.SwingUtilities;
 
 public class MyFrame extends JFrame implements ActionListener {
 
-    Container contentPane;
+    static Container contentPane;
     ArrayList<String> data = new ArrayList<>();
-    ArrayList<DraggableTextPanel> panels = new ArrayList<>();
+    static ArrayList<DraggableTextPanel> panels = new ArrayList<>();
     ArrayList<DraggableImagePanel> imgPanels = new ArrayList<>();
+    ArrayList<Arrow> ArrowPanels = new ArrayList<>();
     Point dragStartPoint = null; 
+
+    JMenu fileMenu = new JMenu("File");
+    static JMenu addMenu = new JMenu("Add");
+    JMenu SettingsMenu = new JMenu("Settings");
 
     public MyFrame() {
         setTitle("NotAFrogButPanels");
@@ -54,28 +62,50 @@ public class MyFrame extends JFrame implements ActionListener {
         getContentPane().setLayout(null);
 
         JMenuBar menu = new JMenuBar();
-        menu.setOpaque(true);
-        menu.setBackground(Color.BLACK);
-        menu.setForeground(Color.WHITE);
+        menu.setOpaque(false); // Прозрачность
+        menu.setBackground(new Color(0, 0, 0, 0)); // Полностью прозрачно
+        menu.setForeground(Color.WHITE); // Или системный цвет
+        menu.setBorderPainted(false);
+        menu.setMargin(new Insets(0, 0, 0, 0)); // Убираем отступы
+
 
         menu.setBorderPainted(false);
         setJMenuBar(menu);
-
-        JMenu fileMenu = new JMenu("File");
-        JMenu addMenu = new JMenu("Add");
 
         JMenuItem saveItem = new JMenuItem("Save");
         JMenuItem loadItem = new JMenuItem("load");
         JMenuItem panelItem = new JMenuItem("Panel");
         JMenuItem imgPanelItem = new JMenuItem("ImagePanel");
+        JMenuItem ArrowItem = new JMenuItem("Arrow");
+        JMenuItem CustomizeItem = new JMenuItem("Customization");
+        JMenuItem TemplateMenuItem = new JMenuItem("Template");
+
+        saveItem.setMargin(new Insets(2, 10, 2, 10));
+        loadItem.setMargin(new Insets(2, 10, 2, 10));
+        panelItem.setMargin(new Insets(2, 10, 2, 10));
+        imgPanelItem.setMargin(new Insets(2, 10, 2, 10));
+        CustomizeItem.setMargin(new Insets(2, 10, 2, 10));
+        TemplateMenuItem.setMargin(new Insets(2, 10, 2, 10));
+
+        TemplateMenuItem.addActionListener(e -> {
+            new TemplateMenu();
+        });
+
+        ArrowItem.addActionListener(e -> {
+            try {
+                Arrow Arrow = new Arrow(100, 100, 20, 20,Color.LIGHT_GRAY,12);
+                contentPane.add(Arrow);
+                ArrowPanels.add(Arrow);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
+            }
+        });
 
         panelItem.addActionListener(e -> {
             try {
-                DraggableTextPanel panel = new DraggableTextPanel(100, 100, "");
+                DraggableTextPanel panel = new DraggableTextPanel(100, 100, "", new Color(100,100,100), new Color(100,100,100));
                 contentPane.add(panel);
                 panels.add(panel);
-                revalidate(); 
-                repaint();   
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
             }
@@ -83,7 +113,20 @@ public class MyFrame extends JFrame implements ActionListener {
             repaint();
         });
 
-        addMenu.add(panelItem);
+        getContentPane().addContainerListener(new ContainerListener() {
+            @Override
+            public void componentAdded(ContainerEvent e) {
+                revalidate();
+                repaint();
+            }
+
+            @Override
+            public void componentRemoved(ContainerEvent e) {
+                revalidate();
+                repaint();
+            }
+        });
+
 
         imgPanelItem.addActionListener(e -> {
             try {
@@ -91,7 +134,7 @@ public class MyFrame extends JFrame implements ActionListener {
 
                 if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 
-                DraggableImagePanel panel = new DraggableImagePanel(100, 100, fileChooser.getSelectedFile().getAbsolutePath());
+                DraggableImagePanel panel = new DraggableImagePanel(100, 100, fileChooser.getSelectedFile().getAbsolutePath(), new Color(100,100,100), new Color(100,100,100));
                 imgPanels.add(panel);
                 contentPane.add(panel);
                 revalidate();
@@ -104,42 +147,42 @@ public class MyFrame extends JFrame implements ActionListener {
             repaint();
         });
 
-        addMenu.add(imgPanelItem);
-
         saveItem.addActionListener(e -> {
-            data.clear();
-            for (int i=0; i<panels.size(); i++) {
-                data.add(panels.get(i).getType());
-                data.add(Integer.toString(panels.get(i).posX));
-                data.add(Integer.toString(panels.get(i).posY));
-                data.add(panels.get(i).text);
-            }
-            for (int i=0; i<imgPanels.size(); i++) {
-                data.add(imgPanels.get(i).getType());
-                data.add(Integer.toString(imgPanels.get(i).getPosX()));
-                data.add(Integer.toString(imgPanels.get(i).getPosY()));
-                data.add(imgPanels.get(i).getImg());
-            }
-            System.out.println(data);
-            DataManager.save(panels,imgPanels);
+            DataManager.save(panels,imgPanels,ArrowPanels);
         });
 
         loadItem.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                 File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
-                DataManager.load(getContentPane(), file, panels, imgPanels);
+                DataManager.load(getContentPane(), file, panels, imgPanels,ArrowPanels);
                 revalidate();
                 repaint();
                 System.out.println(file);
             }
         });
 
+        CustomizeItem.addActionListener(e -> {
+            new PanelCustomization();
+        });
+
+
+
+
+
         fileMenu.add(saveItem);
         fileMenu.add(loadItem);
 
+        addMenu.add(imgPanelItem);
+        addMenu.add(panelItem);
+        addMenu.add(ArrowItem);
+
+        SettingsMenu.add(CustomizeItem);
+        SettingsMenu.add(TemplateMenuItem);
+
         menu.add(fileMenu);
         menu.add(addMenu);
+        menu.add(SettingsMenu);
 
         MouseAdapter mouseHandler = new MouseAdapter() {
             boolean isDragging = false;
@@ -190,6 +233,22 @@ public class MyFrame extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {}
 
+    public static void AddTemplateItem(JMenuItem itm) {
+        for (int i = 0; i < addMenu.getItemCount(); i++) {
+            JMenuItem existingItem = addMenu.getItem(i);
+        
+        
+            if (existingItem != null && existingItem.getText() != null 
+                    && existingItem.getText().equals(itm.getText())) {
+                
+                addMenu.remove(existingItem);
+                addMenu.add(itm);
+                break; 
+            }
+        }
+        
+        addMenu.add(itm);
+    }
 
 }
 
