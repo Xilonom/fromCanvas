@@ -23,6 +23,8 @@ public class DraggableImagePanel extends JPanel {
 
     private final int posX;
     private final int posY;
+    Color color1;
+    Color color2;
 
     String Type = "ImgPanel";
 
@@ -34,7 +36,7 @@ public class DraggableImagePanel extends JPanel {
 
     private Image processedImage;
 
-    public DraggableImagePanel(int posX, int posY, String imgPath) {
+    public DraggableImagePanel(int posX, int posY, String imgPath, Color clr1, Color clr2) {
         this.posX = posX;
         this.posY = posY;
 
@@ -42,6 +44,9 @@ public class DraggableImagePanel extends JPanel {
         originalImage = Toolkit.getDefaultToolkit().createImage(imgPath);
 
         imagePath = imgPath;
+
+        color1 = clr1;
+        color2 = clr2;
 
         // Ждем окончания загрузки изображения
         MediaTracker mt = new MediaTracker(this);
@@ -115,10 +120,7 @@ public class DraggableImagePanel extends JPanel {
         int width = getWidth();
         int height = getHeight();
 
-        // Рисование градиентного фона
-        Color topColor = new Color(255, 172, 54);
-        Color bottomColor = new Color(255, 212, 54);
-        GradientPaint gradient = new GradientPaint(0, 0, topColor, 0, height, bottomColor);
+        GradientPaint gradient = new GradientPaint(0, 0, color1, 0, height, color2);
         g2d.setPaint(gradient);
         g2d.fill(new Rectangle2D.Double(0, 0, width, height));
 
@@ -155,5 +157,11 @@ public class DraggableImagePanel extends JPanel {
     }
     public String getImg() {
         return imagePath;
+    }
+        public Color getColor1() {
+        return color1;
+    }
+    public Color getColor2() {
+        return color2;
     }
 }
