@@ -24,9 +24,9 @@ public class DataManager {
     
     public static File loadedFile;
 
-    public static void saveTemplate(String type,String Name, Point pos,String text,Color color1,Color color2) {
+    public static void saveTemplate(String type,String Name, Point pos,int width,int height,String text,Color color1,Color color2) {
             JSONArray objectListJson = new JSONArray();
-            File selectedFile = new File("src\\main\\resources\\" + Name + ".json");
+            File selectedFile = new File("src\\main\\resources\\" + Name + ".fcnt");
             
             JSONObject item = new JSONObject();
             item.put("type", type);
@@ -64,12 +64,7 @@ public class DataManager {
                 Color color2 = new Color(Integer.parseInt(((String)jsonObj.get("color2"))), true);
 
                 if ("TxtPanel".equals(Type)) {
-                    tmplt.addActionListener(e -> {
-                        DraggableTextPanel panel = new DraggableTextPanel(100, 100, text, color1, color2);
-                        MyFrame.contentPane.add(panel);
-                        MyFrame.panels.add(panel);
-
-                    });
+                    MyFrame.AddNewJMenuItem(tmplt,text,color1,color2);
                 }
                 MyFrame.AddTemplateItem(tmplt);
             }
@@ -91,6 +86,8 @@ public class DataManager {
                 item.put("positionX", obj.getPosX());
                 item.put("positionY", obj.getPosY());
                 item.put("text", obj.getText());
+                item.put("pnl_height",obj.getPanelHeight());
+                item.put("pnl_Width",obj.getPanelWidth());
                 item.put("color1", String.valueOf(obj.getColor1().getRGB()));
                 item.put("color2", String.valueOf(obj.getColor1().getRGB()));
                 objectListJson.add(item);
@@ -103,6 +100,8 @@ public class DataManager {
                 item.put("positionY_1", obj.getPosY_1());
                 item.put("positionX_2", obj.getPosX_2());
                 item.put("positionY_2", obj.getPosY_2());
+                item.put("control_X", obj.getControlX());
+                item.put("control_Y", obj.getControlY());
                 item.put("Head_size", obj.getHead_size());
                 item.put("color", String.valueOf(obj.getColor().getRGB()));
                 objectListJson.add(item);
@@ -137,10 +136,10 @@ public class DataManager {
 
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-            String extension = ".json";
+            String extension = ".fcnv";
             
            
-            if (!selectedFile.getName().endsWith(".json")) {
+            if (!selectedFile.getName().endsWith(extension)) {
                 selectedFile = new File(selectedFile.getPath() + extension);
             }
 
@@ -154,6 +153,8 @@ public class DataManager {
                 item.put("positionX", obj.getPosX());
                 item.put("positionY", obj.getPosY());
                 item.put("text", obj.getText());
+                item.put("pnl_height",obj.getPanelHeight());
+                item.put("pnl_Width",obj.getPanelWidth());
                 item.put("color1", String.valueOf(obj.getColor1().getRGB()));
                 item.put("color2", String.valueOf(obj.getColor1().getRGB()));
                 objectListJson.add(item);
@@ -166,6 +167,8 @@ public class DataManager {
                 item.put("positionY_1", obj.getPosY_1());
                 item.put("positionX_2", obj.getPosX_2());
                 item.put("positionY_2", obj.getPosY_2());
+                item.put("control_X", obj.getControlX());
+                item.put("control_Y", obj.getControlY());
                 item.put("Head_size", obj.getHead_size());
                 item.put("color", String.valueOf(obj.getColor().getRGB()));
                 objectListJson.add(item);
@@ -216,8 +219,11 @@ public class DataManager {
                         long posY = ((Number)jsonObj.get("positionY")).longValue();
                         Color color1 = new Color(Integer.parseInt(((String)jsonObj.get("color1"))), true);
                         Color color2 = new Color(Integer.parseInt(((String)jsonObj.get("color2"))), true);
+                        long height = ((Number)jsonObj.get("pnl_height")).longValue(); 
+                        long width = ((Number)jsonObj.get("pnl_Width")).longValue(); 
 
                         DraggableTextPanel panel = new DraggableTextPanel((int)posX, (int)posY, text, color1, color2);
+                        panel.setPanelSize((int) width, (int)height);
                         contentPane.add(panel);
                         pnlList.add(panel);
                     }
@@ -238,10 +244,12 @@ public class DataManager {
                         long posY_1 = ((Number)jsonObj.get("positionY_1")).longValue();
                         long posX_2 = ((Number)jsonObj.get("positionX_2")).longValue(); 
                         long posY_2 = ((Number)jsonObj.get("positionY_2")).longValue();
+                        long cntrlX = ((Number)jsonObj.get("control_X")).longValue();
+                        long cntrlY = ((Number)jsonObj.get("control_Y")).longValue();
                         Color color = new Color(Integer.parseInt(((String)jsonObj.get("color"))), true);
                         long Head_size = ((Number)jsonObj.get("Head_size")).longValue();
 
-                        Arrow arrow = new Arrow((int)posX_1, (int)posY_1, (int)posX_2, (int)posY_2, color, (int)Head_size);
+                        Arrow arrow = new Arrow((int)posX_1, (int)posY_1, (int)posX_2, (int)posY_2,new Point((int)cntrlX,(int)cntrlY), color, (int)Head_size);
                         contentPane.add(arrow);
                         ArrowPnlList.add(arrow);
                     }

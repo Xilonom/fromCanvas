@@ -1,12 +1,14 @@
 package myproject;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
@@ -18,23 +20,29 @@ import java.util.ArrayList;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-
-
 
 public class MyFrame extends JFrame implements ActionListener {
 
+    static boolean IsCursorBusy;
+    static boolean IsEditing;
+    public static DraggableTextPanel currentlyEditingPanel = null;
+    public static Arrow currentlyEditingArrow = null;
     static Container contentPane;
-    ArrayList<String> data = new ArrayList<>();
     static ArrayList<DraggableTextPanel> panels = new ArrayList<>();
     ArrayList<DraggableImagePanel> imgPanels = new ArrayList<>();
     ArrayList<Arrow> ArrowPanels = new ArrayList<>();
-    Point dragStartPoint = null; 
+
+    public static JLayeredPane BackgroundPanel;
+
+    private static int canvasOffsetX = 0;
+    private static int canvasOffsetY = 0;
+    private Point dragStart;
 
     JMenu fileMenu = new JMenu("File");
     static JMenu addMenu = new JMenu("Add");
@@ -42,34 +50,87 @@ public class MyFrame extends JFrame implements ActionListener {
 
     public MyFrame() {
         setTitle("NotAFrogButPanels");
-        setSize(800, 600); 
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
-        
 
-        JPanel gradientPanel = new JPanel() {
+        BackgroundPanel = new JLayeredPane() {
+            private final Color BACKGROUND_COLOR = new Color(0,0,0);
+            private final Color DOT_COLOR = new Color(45,45,45);
+            private final int DOT_SIZE = 3;
+            private final int GRID_STEP = 40;
+
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
-                GradientPaint gp = new GradientPaint(0, 0, new Color(45,45,45), 0, this.getHeight(), new Color(20,20,20));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, this.getWidth(), this.getHeight());
+
+                g2d.setColor(BACKGROUND_COLOR);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+
+                
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+                g2d.setColor(DOT_COLOR);
+
+                int startX = -(canvasOffsetX % GRID_STEP);
+                int startY = -(canvasOffsetY % GRID_STEP);
+
+                for (int x = startX; x < getWidth(); x += GRID_STEP) {
+                    for (int y = startY; y < getHeight(); y += GRID_STEP) {
+                        g2d.fillOval(x, y, DOT_SIZE, DOT_SIZE);
+                    }
+                }
+
                 g2d.dispose();
             }
         };
-        gradientPanel.setBounds(0, 0, getWidth(), getHeight()); // Устанавливаем размер и позицию
-        setContentPane(gradientPanel);
+
+        BackgroundPanel.setBounds(0, 0, getWidth(), getHeight());
+        setContentPane(BackgroundPanel);
         getContentPane().setLayout(null);
+        contentPane = getContentPane();
+
+
+        
+
+        contentPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e) || IsCursorBusy == false) {
+                    dragStart = e.getPoint();
+                }
+                else {
+                    dragStart = null;
+                }
+            }
+        });
+
+        contentPane.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (dragStart != null) {
+                    int dx = e.getX() - dragStart.x;
+                    int dy = e.getY() - dragStart.y;
+                    
+                    canvasOffsetX -= dx;
+                    canvasOffsetY -= dy;
+                    
+                    for (Component comp : contentPane.getComponents()) {
+                        comp.setLocation(comp.getX() + dx, comp.getY() + dy);
+                    }
+                    dragStart = e.getPoint();
+                    repaint();
+                }
+            }
+        });
 
         JMenuBar menu = new JMenuBar();
-        menu.setOpaque(false); // Прозрачность
-        menu.setBackground(new Color(0, 0, 0, 0)); // Полностью прозрачно
-        menu.setForeground(Color.WHITE); // Или системный цвет
+        menu.setOpaque(false);
+        menu.setBackground(new Color(0, 0, 0, 0));
+        menu.setForeground(Color.WHITE);
         menu.setBorderPainted(false);
-        menu.setMargin(new Insets(0, 0, 0, 0)); // Убираем отступы
+        menu.setMargin(new Insets(0, 0, 0, 0));
 
-
-        menu.setBorderPainted(false);
         setJMenuBar(menu);
 
         JMenuItem saveItem = new JMenuItem("Save");
@@ -93,9 +154,14 @@ public class MyFrame extends JFrame implements ActionListener {
 
         ArrowItem.addActionListener(e -> {
             try {
-                Arrow Arrow = new Arrow(100, 100, 20, 20,Color.LIGHT_GRAY,12);
+                Point pos = getRandomVisiblePosition(150, 150);
+                Arrow Arrow = new Arrow(pos.x, pos.y, pos.x-75, pos.y-75,null,Color.LIGHT_GRAY,12);
                 contentPane.add(Arrow);
                 ArrowPanels.add(Arrow);
+                if (ArrowPanels.size() > 1) {
+                    BackgroundPanel.setLayer(ArrowPanels.get(ArrowPanels.indexOf(Arrow) - 1),Arrow.DEFAULT_LAYER);
+                }
+                BackgroundPanel.setLayer(Arrow,99);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
             }
@@ -103,15 +169,34 @@ public class MyFrame extends JFrame implements ActionListener {
 
         panelItem.addActionListener(e -> {
             try {
-                DraggableTextPanel panel = new DraggableTextPanel(100, 100, "", new Color(100,100,100), new Color(100,100,100));
+                DraggableTextPanel panel = new DraggableTextPanel(1462683, 1462683, "", new Color(24, 24, 26), new Color(24, 24, 26));
                 contentPane.add(panel);
                 panels.add(panel);
+                if (ArrowPanels.size() > 1) {
+                    BackgroundPanel.setLayer(panels.get(panels.indexOf(panel) - 1),panel.DEFAULT_LAYER);
+                }
+                BackgroundPanel.setLayer(panel,99);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
             }
             revalidate();
             repaint();
         });
+
+        imgPanelItem.addActionListener(e -> {
+            try {
+                Point pos = getRandomVisiblePosition(150, 150);
+                DraggableImagePanel panel = new DraggableImagePanel(pos.x, pos.y, null, new Color(24, 24, 26), new Color(24, 24, 26));
+                contentPane.add(panel);
+                //ImagePanels.add(panel);
+                BackgroundPanel.setLayer(panel,99);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
+            }
+            revalidate();
+            repaint();
+        });
+
 
         getContentPane().addContainerListener(new ContainerListener() {
             @Override
@@ -127,29 +212,9 @@ public class MyFrame extends JFrame implements ActionListener {
             }
         });
 
-
-        imgPanelItem.addActionListener(e -> {
-            try {
-                JFileChooser fileChooser = new JFileChooser();
-
-                if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-
-                DraggableImagePanel panel = new DraggableImagePanel(100, 100, fileChooser.getSelectedFile().getAbsolutePath(), new Color(100,100,100), new Color(100,100,100));
-                imgPanels.add(panel);
-                contentPane.add(panel);
-                revalidate();
-                repaint();
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Ошибка при создании панели: " + ex.getMessage());
-            }
-            revalidate();
-            repaint();
-        });
-
         saveItem.addActionListener(e -> {
             DataManager.save(panels,imgPanels,ArrowPanels);
-        });
+        }); 
 
         loadItem.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
@@ -166,10 +231,6 @@ public class MyFrame extends JFrame implements ActionListener {
             new PanelCustomization();
         });
 
-
-
-
-
         fileMenu.add(saveItem);
         fileMenu.add(loadItem);
 
@@ -183,51 +244,6 @@ public class MyFrame extends JFrame implements ActionListener {
         menu.add(fileMenu);
         menu.add(addMenu);
         menu.add(SettingsMenu);
-
-        MouseAdapter mouseHandler = new MouseAdapter() {
-            boolean isDragging = false;
-
-            
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (SwingUtilities.isRightMouseButton(e)) { 
-                    dragStartPoint = e.getPoint();
-                    isDragging = true;
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (isDragging && SwingUtilities.isRightMouseButton(e)) {
-                    isDragging = false;
-                }
-            }
-
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if (!isDragging || !SwingUtilities.isRightMouseButton(e)) return;
-                
-                Point currentMousePos = e.getPoint();
-                int dx = currentMousePos.x - dragStartPoint.x;
-                int dy = currentMousePos.y - dragStartPoint.y;
-                
-                for (DraggableTextPanel p : panels) {
-                    p.setLocation(p.getX() + dx, p.getY() + dy);
-                }
-                for (DraggableImagePanel p : imgPanels) {
-                    p.setLocation(p.getX() + dx, p.getY() + dy);
-                }
-                dragStartPoint = currentMousePos;
-                repaint();
-            }
-        };
-        
-
-        contentPane = getContentPane();
-        contentPane.addMouseMotionListener(mouseHandler);
-        contentPane.addMouseListener(mouseHandler);
-        
-        
     }
     
     @Override
@@ -248,6 +264,44 @@ public class MyFrame extends JFrame implements ActionListener {
         }
         
         addMenu.add(itm);
+    }
+    private static Rectangle getVisibleArea() {
+    // Размер панели (где рисуется фон)
+    int width = contentPane.getWidth();
+    int height = contentPane.getHeight();
+
+    // Видимая область в "мире" (с учётом смещения)
+    int visibleX = -canvasOffsetX;
+    int visibleY = -canvasOffsetY;
+
+    return new Rectangle(visibleX, visibleY, width, height);
+    }
+
+    public static Point getRandomVisiblePosition(int panelWidth, int panelHeight) {
+    Rectangle visible = getVisibleArea();
+
+    
+    int minX = visible.x;
+    int maxX = visible.x + visible.width - panelWidth;
+    int minY = visible.y;
+    int maxY = visible.y + visible.height - panelHeight;
+    
+    int x = minX + (int) (Math.random() * (maxX - minX));
+    int y = minY + (int) (Math.random() * (maxY - minY));
+    
+    // Компенсируем смещение фона: преобразуем из «мировых» в «экранные» координаты
+    return new Point(x + canvasOffsetX, y + canvasOffsetY);
+    }
+
+
+    public static void AddNewJMenuItem(JMenuItem btn, String text, Color color1, Color color2) {
+        btn.addActionListener(e -> {
+            Point pos = getRandomVisiblePosition(150, 150);
+            DraggableTextPanel panel = new DraggableTextPanel(pos.x, pos.y, text, color1, color2);
+            MyFrame.contentPane.add(panel);
+            MyFrame.panels.add(panel);
+
+        });
     }
 
 }
